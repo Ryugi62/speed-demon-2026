@@ -6,6 +6,8 @@ use std::fs::File;
 use std::os::unix::fs::FileExt;
 use std::path::Path;
 
+/// The board pins exactly 12 hardware threads (cpuset 0-11), so the count is fixed, not probed.
+const THREADS: usize = 12;
 const BLOCK: usize = 8 << 20;
 const ERROR_BIT: u32 = 1 << 31;
 
@@ -189,8 +191,7 @@ fn run(data: &Path, out: &Path, threads: usize) {
 }
 
 fn main() {
-    let threads = std::thread::available_parallelism().map_or(12, |n| n.get());
-    run(Path::new("/data"), Path::new("/out"), threads);
+    run(Path::new("/data"), Path::new("/out"), THREADS);
 }
 
 #[cfg(test)]
@@ -250,6 +251,12 @@ mod tests {
     fn nearest_rank_with_101_values() {
         let log: String = (0..101).rev().map(|i| format!("2026-10-30T18:00:00.000000Z GET /x 200 {}\n", i + 1)).collect();
         assert_eq!(summarize("p101", &log, 2), "2026-10-30T18:00:00Z /x 101 51 96 100 0 0\n");
+    }
+
+    #[test]
+    fn thread_count_is_fixed_not_probed() {
+        // The board gives exactly 12 hardware threads; probing the host once hung under emulation.
+        assert_eq!(THREADS, 12);
     }
 
     #[test]
