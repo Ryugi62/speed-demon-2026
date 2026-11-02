@@ -31,7 +31,17 @@ Local setup for steps 1-2: Colima VM, **arm64 native** (not the x86-64 emulation
 - Measured on the real file: `redone=0` on every run, so the guess was right at every cut on this data.
 - Verdict: correct; the local speed-up is not credible yet (2 shared vCPUs, noise larger than the effect). Memory grows with threads (23 MB at 1, 132 MB at 12) because each thread owns a name table and bitsets; that is the next thing to shrink.
 
+## 계획 대비 바뀐 점
+- 계획: 청크마다 「따옴표 안 / 밖」 두 가정으로 둘 다 파싱한 뒤 왼쪽부터 확정.
+- 구현: 구간마다 레코드 시작을 한 번 추정하고, 앞 구간이 끝난 위치와 같은지 연쇄로 검증하며, 어긋나면 그 구간만 재파싱.
+- 이유: 정상 경로에서 작업이 2배가 되지 않는다. 정확성은 추정이 아니라 검증이 지킨다(시험으로 확인).
+- 두 가정 방식은 만들지 않았고 측정값도 없다.
+
+### Step 3: allowlisted linux/amd64 image, `check.py` 5 of 5
+- Image: `rust:1-slim-trixie` (pinned digest) build, `debian:13-slim` runtime, image 30 MB. Data = seed-1 full, files verified against `SHA256SUMS.txt`.
+- Measured: sha256 `d8088b1cd42ba1338b1345b107b55db7b96ef1f5066f3ff64fd26a8912a0f536` on all 5 runs (PASS). Time printed by `check.py` including container start-up: 2.60, 2.68, 2.71, 3.46, 2.55 s (emulated x86-64 on 2 shared vCPUs; directional only, board run IDs are the record).
+- Verdict: S1 met locally. Still open: `cargo test` inside amd64 (first execution of the SSE2 search path by the tests), profiling, memory.
+
 ## Not yet done (state at the stop)
-- Local run with the allowlisted `linux/amd64` image 5 times via `check.py`: not run. The disk had 251 MB free at 09:30 (rule: stop under 600 MB), and pulling `rust:1-slim-trixie` would need several hundred MB.
 - SSE2 search path (`x86_64`) has only been compiled for arm64 so far; its first execution is in the amd64 container.
 - Profiling and the throughput work; shrinking per-thread memory; lines of code and `/usr/bin/time -v` table (VmHWM from `SD_REPORT=1` is used instead of `time -v`).
